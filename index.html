@@ -1,50 +1,114 @@
 <body>
-  <!-- Insert this script at the bottom of the HTML, but before you use any Firebase services -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
+	<script type="module">
+		// 모듈 방식으로 import. Modular API 방식으로 코딩.
+		import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
+		import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+		import { getFirestore, setDoc, getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js'
 
+		const firebaseConfig = {
+			apiKey: "AIzaSyB89ImXbiKosw6eTCC8S1_vY8BzGq_SFY0",
+			authDomain: "withcenter-test-5.firebaseapp.com",
+			databaseURL: "https://withcenter-test-5-default-rtdb.asia-southeast1.firebasedatabase.app",
+			projectId: "withcenter-test-5",
+			storageBucket: "withcenter-test-5.appspot.com",
+			messagingSenderId: "1064417466216",
+			appId: "1:1064417466216:web:039565a60d9b0b74db28dd"
+		};
 
-    // Add Firebase products that you want to use
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
-    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js'
+		const app = initializeApp(firebaseConfig);
+		const auth = getAuth(app);
 
-	const firebaseConfig = {
-	  apiKey: "AIzaSyB89ImXbiKosw6eTCC8S1_vY8BzGq_SFY0",
-	  authDomain: "withcenter-test-5.firebaseapp.com",
-	  databaseURL: "https://withcenter-test-5-default-rtdb.asia-southeast1.firebasedatabase.app",
-	  projectId: "withcenter-test-5",
-	  storageBucket: "withcenter-test-5.appspot.com",
-	  messagingSenderId: "1064417466216",
-	  appId: "1:1064417466216:web:039565a60d9b0b74db28dd"
-	};
+		// 로그인 상태 변화 감지
+		onAuthStateChanged(auth, (user) => {
+			if (user) {
+				// 로그인
+				const uid = user.uid;
+				document.getElementById('register').style.display = 'none';
+				document.getElementById('profile-form').style.display = 'block';
+				document.getElementById('email').innerText = '회원 이메일: ' + user.email;
 
+				// get user data from firestore at /users/{uid}
+				// 1. getFirestore(app) 로 firestore 객체 생성
+				// 2. doc(db, "users", uid) 로 해당 유저의 정보를 가져옴
+				// 3. getDoc(doc) 로 해당 문서의 데이터를 가져옴
+				// 4. data() 로 데이터를 가져옴
+				// 5. 가져온 데이터를 화면에 표시
+				const db = getFirestore(app);
+				const docRef = doc(db, "users", uid);
+				getDoc(docRef)
+					.then((doc) => {
+						if (doc.exists()) {
+							console.log("Document data:", doc.data());
+							const data = doc.data();
+							document.querySelector('input[name="name"]').value = data.name;
+						} else {
+							// doc.data() will be undefined in this case
+							console.log("No such document!");
+							document.querySelector('input[name="name"]').value = '';
+						}
+					})
+					.catch((error) => {
+						console.log("Error getting document:", error);
+					});
+			} else {
+				// 로그아웃
+				document.getElementById('register').style.display = 'block';
+				document.getElementById('profile-form').style.display = 'none';
+			}
+		});
 
-	const app = initializeApp(firebaseConfig);
+		function createAccount() {
+			const email = document.querySelector('input[name="email"]').value;
+			const password = document.querySelector('input[name="password"]').value;
 
-	console.log(app);
+			// 회원 가입 함수
+			createUserWithEmailAndPassword(auth, email, password)
+				.then((userCredential) => {
+					// 회원 가입 성공
+					var user = userCredential.user;
+					console.log('User created:', user);
+					alert('회원 가입 성공: UID: ' + user.uid);
 
-	
+				})
+				.catch((error) => {
+					var errorCode = error.code;
+					var errorMessage = error.message;
+					alert('errorCode: ' + errorCode + ', message: ' + errorMessage);
+				});
+		}
 
-	function createAccount() {
-		firebase.auth().creaReUserWithEmailAndPassword(email, password)
-		  .then((userCredential) => {
-		    // Signed in 
-		    var user = userCredential.user;
-		    // ...
-		  })
-		  .catch((error) => {
-		    var errorCode = error.code;
-		    var errorMessage = error.message;
-		    alert('errorCode: ' + errorCode + ', message: ' + errorMessage);
-		  });
-	}
-  </script>
+		function updateName() {
+			const user = auth.currentUser;
+			const name = document.querySelector('input[name="name"]').value;
+			const db = getFirestore(app);
 
-<h1>Register</h1>
-<input name=email><br>
-<input name=password><br>
-<div onclick="createAccount">SUBMIT</div>
+			// 회원 정보 수정 함수
+			setDoc(doc(db, "users", user.uid), {
+				name: name,
+				updatedAt: new Date(),
+			}, { merge: true }).then(() => {
+				console.log("Document successfully written!");
+			}).catch((error) => {
+				console.error("Error writing document: ", error);
+			});
+		}
+
+		// 함수들이 module 에 들어있어서, global scope 으로 빼줘야 html 에서 사용 가능
+		window.createAccount = createAccount;
+		window.updateName = updateName;
+		window.auth = auth;
+	</script>
+	<div id="register">
+		<h1>회원 가입</h1>
+		<input name="email" type="email" placeholder="Email"><br>
+		<input name="password" type="password" placeholder="Password"><br>
+		<button type="button" onclick="createAccount()">SUBMIT</button>
+	</div>
+	<div id="profile-form">
+		<h1>회원 정보 수정</h1>
+		<div id="email"></div>
+		<input name="name"><br>
+		<button type="button" onclick="updateName()">SUBMIT</button>
+	</div>
+	<button type="button" onclick="auth.signOut()">LOGOUT</button>
 </body>
-
-
-
