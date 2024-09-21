@@ -38,17 +38,17 @@
 				getDoc(docRef)
 					.then((doc) => {
 						if (doc.exists()) {
-							console.log("Document data:", doc.data());
+							console.log("문서 데이터:", doc.data());
 							const data = doc.data();
 							document.querySelector('input[name="name"]').value = data.name;
 						} else {
 							// doc.data() will be undefined in this case
-							console.log("No such document!");
+							console.log("문서 존재하지 않음!");
 							document.querySelector('input[name="name"]').value = '';
 						}
 					})
 					.catch((error) => {
-						console.log("Error getting document:", error);
+						console.log("문서 읽기 에러:", error);
 					});
 			} else {
 				// 로그아웃
@@ -66,7 +66,6 @@
 				.then((userCredential) => {
 					// 회원 가입 성공
 					var user = userCredential.user;
-					console.log('User created:', user);
 					alert('회원 가입 성공: UID: ' + user.uid);
 
 				})
@@ -87,9 +86,9 @@
 				name: name,
 				updatedAt: new Date(),
 			}, { merge: true }).then(() => {
-				console.log("Document successfully written!");
+				console.log("문서 수정 성공");
 			}).catch((error) => {
-				console.error("Error writing document: ", error);
+				console.error("에러: ", error);
 			});
 		}
 
